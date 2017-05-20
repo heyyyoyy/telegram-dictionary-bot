@@ -3,3 +3,4 @@ bs4==0.0.1
 Flask==0.12.2
 pyTelegramBotAPI==2.3.2
 requests==2.14.2
+lxml==3.7.3
