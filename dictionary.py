@@ -1,114 +1,132 @@
 from bs4 import BeautifulSoup
 import requests
-import const
+import settings
+
+levels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
 
 
 class Dictionary:
-    def __init__(self):
-        self._word = ''
-        self.soup = None
 
-    def set_word(self, word):
-        self._word = word
+    resp = ''
 
-    def response(self, url):
-        resp = requests.get(url + self._word)
-        if resp.url == url:
-            return ''
-        self.soup = BeautifulSoup(resp.text, features='lxml')
-        return resp.text
+    @classmethod
+    def response(cls, word):
+        if word.split()[0] == '/dict':
+            cls.resp = requests.get(settings.URL_INTERPRETATION + word.split()[-1])
+        elif word.split()[0] == '/tr':
+            cls.resp = requests.get(settings.URL_TRANSLATE + word.split()[-1])
+        if cls.resp.url == settings.URL_INTERPRETATION:
+            raise ValueError
+        soup = BeautifulSoup(cls.resp.text, features='lxml')
+        return soup
 
-    def get_transcription(self):
-        transc = self.soup.find('span', class_='pron').text
+    @classmethod
+    def get_transcription(cls, soup):
+        transc = soup.find('span', class_='pron').text
         return transc
 
-    def get_audio(self):
-        audio = self.soup.find('span', class_='circle circle-btn sound audio_play_button uk').get('data-src-mp3')
+    @classmethod
+    def get_audio(cls, soup):
+        audio = soup.find('span', class_='circle circle-btn sound audio_play_button uk').get('data-src-mp3')
         return audio
 
 
 class Interpretation(Dictionary):
-    def __init__(self):
-        super().__init__()
 
-    def get_title(self):
-        title = self.soup.find('span', class_='hw').text
+    @classmethod
+    def get_title(cls, soup):
+        title = soup.find('span', class_='hw').text
         return title
 
-    def get_labels(self):
+    @classmethod
+    def get_labels(cls, soup):
         try:
-            label = self.soup.find('span', class_='pos').text
+            label = soup.find('span', class_='pos').text
         except AttributeError:
             return 'Not label'
         else:
             return label
 
-    def description(self):
-        descr = self.soup.find_all('div', class_='def-block pad-indent')
-        lst = []
+    @classmethod
+    def get_description(cls, soup):
+        descr = soup.find_all('div', class_='def-block pad-indent')
+        description_list = []
         for d in descr:
             des = d.find('p', class_='def-head semi-flush').text
-            if des != '' and des[:2] in const.levels:
+            if des != '' and des[:2] in levels:
                des = '*{}* {}'.format(des[:2], des[2:])
             example = d.find_all('span', class_='def-body')
             example = '\n'.join(map(lambda x: x.text, example))
-            lst.append([des, example])
-        return lst
+            description_list.append([des, example])
+        return description_list
 
-    def get_dict(self):
-        title = self.get_title()
-        labels = self.get_labels()
-        audio = self.get_audio()
-        transcr = self.get_transcription()
-        descr = self.description()
-        return {
-            'title': title,
-            'label': labels,
-            'audio': audio,
-            'transcr': transcr,
-            'descr': descr
-        }
+    @classmethod
+    def get_dict(cls, word):
+        try:
+            soup = cls.response(word)
+        except ValueError:
+            return False
+        else:
+            title = cls.get_title(soup)
+            labels = cls.get_labels(soup)
+            audio = cls.get_audio(soup)
+            transcr = cls.get_transcription(soup)
+            descr = cls.get_description(soup)
+            return {
+                'title': title,
+                'label': labels,
+                'audio': audio,
+                'transcr': transcr,
+                'descr': descr
+            }
 
 
 class Translate(Dictionary):
-    def __init__(self):
-        super().__init__()
 
-    def get_title(self):
-        title = self.soup.find('h2', class_='di-title cdo-section-title-hw').text
+    @classmethod
+    def get_title(cls, soup):
+        title = soup.find('h2', class_='di-title cdo-section-title-hw').text
         return title
 
-    def get_labels(self):
+    @classmethod
+    def get_labels(cls, soup):
         try:
-            label = self.soup.find('span', class_='posgram ico-bg').text
+            label = soup.find('span', class_='posgram ico-bg').text
         except AttributeError:
             return 'Not label'
         else:
             return label
 
-    def description(self):
-        descr = self.soup.find_all('div', class_='def-block pad-indent')
-        lst = []
+    @classmethod
+    def get_description(cls, soup):
+        descr = soup.find_all('div', class_='def-block pad-indent')
+        description_list = []
         for d in descr:
             des = d.find('p', class_='def-head semi-flush').text
-            if des != '' and des[:2] in const.levels:
+            if des != '' and des[:2] in levels:
                 des = '*{}* {}'.format(des[:2], des[2:])
             trans = d.find('span', class_='trans').text.strip()
             ex = d.find_all('div', class_='examp emphasized')
             ex = '\n'.join(map(lambda x: x.text, ex))
-            lst.append([des, trans, ex])
-        return lst
+            description_list.append([des, trans, ex])
+        return description_list
 
-    def get_dict(self):
-        title = self.get_title()
-        labels = self.get_labels()
-        audio = self.get_audio()
-        transcr = self.get_transcription()
-        descr = self.description()
-        return {
-            'title': title,
-            'label': labels,
-            'audio': audio,
-            'transcr': transcr,
-            'descr': descr
-        }
+    @classmethod
+    def get_dict(cls, word):
+        try:
+            soup = cls.response(word)
+        except ValueError:
+            return False
+        else:
+            title = cls.get_title(soup)
+            labels = cls.get_labels(soup)
+            audio = cls.get_audio(soup)
+            transcr = cls.get_transcription(soup)
+            descr = cls.get_description(soup)
+            return {
+                'title': title,
+                'label': labels,
+                'audio': audio,
+                'transcr': transcr,
+                'descr': descr
+            }
