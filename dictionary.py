@@ -9,7 +9,7 @@ class Dictionary:
     @classmethod
     def response(cls, word, url):
         resp = requests.get(url + word.split()[-1])
-        if resp.url == settings.URL_INTERPRETATION:
+        if resp.url == url:
             raise ValueError
         soup = BeautifulSoup(resp.text, features='lxml')
         return soup
