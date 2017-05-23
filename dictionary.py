@@ -6,18 +6,12 @@ levels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
 
 
 class Dictionary:
-
-    resp = ''
-
     @classmethod
-    def response(cls, word):
-        if word.split()[0] == '/dict':
-            cls.resp = requests.get(settings.URL_INTERPRETATION + word.split()[-1])
-        elif word.split()[0] == '/tr':
-            cls.resp = requests.get(settings.URL_TRANSLATE + word.split()[-1])
-        if cls.resp.url == settings.URL_INTERPRETATION:
+    def response(cls, word, url):
+        resp = requests.get(url + word.split()[-1])
+        if resp.url == settings.URL_INTERPRETATION:
             raise ValueError
-        soup = BeautifulSoup(cls.resp.text, features='lxml')
+        soup = BeautifulSoup(resp.text, features='lxml')
         return soup
 
     @classmethod
@@ -32,7 +26,6 @@ class Dictionary:
 
 
 class Interpretation(Dictionary):
-
     @classmethod
     def get_title(cls, soup):
         title = soup.find('span', class_='hw').text
@@ -54,7 +47,7 @@ class Interpretation(Dictionary):
         for d in descr:
             des = d.find('p', class_='def-head semi-flush').text
             if des != '' and des[:2] in levels:
-               des = '*{}* {}'.format(des[:2], des[2:])
+                des = '*{}* {}'.format(des[:2], des[2:])
             example = d.find_all('span', class_='def-body')
             example = '\n'.join(map(lambda x: x.text, example))
             description_list.append([des, example])
@@ -63,7 +56,7 @@ class Interpretation(Dictionary):
     @classmethod
     def get_dict(cls, word):
         try:
-            soup = cls.response(word)
+            soup = cls.response(word, settings.URL_INTERPRETATION)
         except ValueError:
             return False
         else:
@@ -82,7 +75,6 @@ class Interpretation(Dictionary):
 
 
 class Translate(Dictionary):
-
     @classmethod
     def get_title(cls, soup):
         title = soup.find('h2', class_='di-title cdo-section-title-hw').text
@@ -114,7 +106,7 @@ class Translate(Dictionary):
     @classmethod
     def get_dict(cls, word):
         try:
-            soup = cls.response(word)
+            soup = cls.response(word, settings.URL_TRANSLATE)
         except ValueError:
             return False
         else:
