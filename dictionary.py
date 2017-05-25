@@ -24,6 +24,33 @@ class Dictionary:
         audio = soup.find('span', class_='circle circle-btn sound audio_play_button uk').get('data-src-mp3')
         return audio
 
+    @classmethod
+    def get_title(cls, soup):
+        pass
+
+    @classmethod
+    def get_labels(cls, soup):
+        pass
+
+    @classmethod
+    def get_description(cls, soup):
+        pass
+
+    @classmethod
+    def make_dict(cls, soup):
+        title = cls.get_title(soup)
+        labels = cls.get_labels(soup)
+        audio = cls.get_audio(soup)
+        transcr = cls.get_transcription(soup)
+        descr = cls.get_description(soup)
+        return {
+            'title': title,
+            'label': labels,
+            'audio': audio,
+            'transcr': transcr,
+            'descr': descr
+        }
+
 
 class Interpretation(Dictionary):
     @classmethod
@@ -51,7 +78,9 @@ class Interpretation(Dictionary):
             example = d.find_all('span', class_='def-body')
             example = '\n'.join(map(lambda x: x.text, example))
             description_list.append([des, example])
-        return description_list
+        descriptions = list(map(lambda x: '\[Description] {}\n'
+                                          '\[Example] {}\n'.format(x[0], x[1]), description_list))
+        return descriptions
 
     @classmethod
     def get_dict(cls, word):
@@ -60,18 +89,7 @@ class Interpretation(Dictionary):
         except ValueError:
             return False
         else:
-            title = cls.get_title(soup)
-            labels = cls.get_labels(soup)
-            audio = cls.get_audio(soup)
-            transcr = cls.get_transcription(soup)
-            descr = cls.get_description(soup)
-            return {
-                'title': title,
-                'label': labels,
-                'audio': audio,
-                'transcr': transcr,
-                'descr': descr
-            }
+            return cls.make_dict(soup)
 
 
 class Translate(Dictionary):
@@ -101,7 +119,10 @@ class Translate(Dictionary):
             ex = d.find_all('div', class_='examp emphasized')
             ex = '\n'.join(map(lambda x: x.text, ex))
             description_list.append([des, trans, ex])
-        return description_list
+        descriptions = list(map(lambda x: '\[Description] {}\n'
+                                          '\[Translate] {}\n'
+                                          '\[Example] {}\n'.format(x[0], x[1], x[2]), description_list))
+        return descriptions
 
     @classmethod
     def get_dict(cls, word):
@@ -110,15 +131,4 @@ class Translate(Dictionary):
         except ValueError:
             return False
         else:
-            title = cls.get_title(soup)
-            labels = cls.get_labels(soup)
-            audio = cls.get_audio(soup)
-            transcr = cls.get_transcription(soup)
-            descr = cls.get_description(soup)
-            return {
-                'title': title,
-                'label': labels,
-                'audio': audio,
-                'transcr': transcr,
-                'descr': descr
-            }
+            return cls.make_dict(soup)
