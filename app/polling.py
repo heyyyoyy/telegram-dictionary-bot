@@ -7,13 +7,12 @@ bot = telebot.TeleBot(settings.TOKEN)
 
 
 def text_format(dictionary):
-    part = '*[Word] {}\n[Part of speech] {}\n[Transcription]*\n'.format(
-        dictionary['title'], dictionary['label'], dictionary['transcription'])
+    part = '*[Word] {title}\n[Part of speech] {label}\n[Transcription] {transcription}*\n'.format(**dictionary)
     descriptions = []
-    for description in dictionary['description']:
-        if len(description)+len(part) < 4096:
+    for description in dictionary.get('description'):
+        if len(description) + len(part) < 4096:
             part += description
-            if description is dictionary['description'][-1]:
+            if description is dictionary.get('description')[-1]:
                 descriptions.append(part)
         else:
             descriptions.append(part)
@@ -39,7 +38,8 @@ def interpretation_word(message):
             txt = text_format(dictionary)
             for part in txt:
                 bot.send_message(message.chat.id, part, parse_mode='Markdown')
-            bot.send_audio(message.chat.id, dictionary['audio'])
+            if dictionary.get('audio') is not None:
+                bot.send_audio(message.chat.id, dictionary.get('audio'))
         else:
             bot.send_message(message.chat.id, 'Нет такого слова.')
 

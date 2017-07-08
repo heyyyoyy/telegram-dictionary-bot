@@ -12,30 +12,34 @@ class Dictionary:
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, features='lxml')
             return soup
-        else:
-            return
 
     @classmethod
     def get_transcription(cls, soup):
-        transc = soup.find('span', class_='pron').text
-        return transc
+        try:
+            transcription = soup.find('span', class_='pron').text
+        except AttributeError:
+            return 'Not transcription'
+        return transcription
 
     @classmethod
     def get_audio(cls, soup):
-        audio = soup.find('span', class_='circle circle-btn sound audio_play_button uk').get('data-src-mp3')
+        try:
+            audio = soup.find('span', class_='circle circle-btn sound audio_play_button uk').get('data-src-mp3')
+        except AttributeError:
+            return
         return audio
 
     @classmethod
     def get_title(cls, soup):
-        pass
+        raise NotImplementedError
 
     @classmethod
     def get_labels(cls, soup):
-        pass
+        raise NotImplementedError
 
     @classmethod
     def get_description(cls, soup):
-        pass
+        raise NotImplementedError
 
     @classmethod
     def make_dict(cls, soup):
@@ -65,8 +69,7 @@ class Interpretation(Dictionary):
             label = soup.find('span', class_='pos').text
         except AttributeError:
             return 'Not label'
-        else:
-            return label
+        return label
 
     @classmethod
     def get_description(cls, soup):
@@ -75,12 +78,12 @@ class Interpretation(Dictionary):
         for part in descriptions:
             word_description = part.find('p', class_='def-head semi-flush').text
             if word_description != '' and word_description[:2] in levels:
-                word_description = '*{}* {}'.format(word_description[:2], word_description[2:])
+                word_description = '*{0}* {1}'.format(word_description[:2], word_description[2:])
             examples = part.find_all('span', class_='def-body')
             example = '\n'.join(chunk.text for chunk in examples)
             descriptions_text.append([word_description, example])
-        descriptions = list(map(lambda x: '\[Description] {}\n'
-                                          '\[Example] {}\n'.format(x[0], x[1]), descriptions_text))
+        descriptions = ['\[Description] {0}\n\[Example] {1}\n'.format(description[0], description[1])
+                        for description in descriptions_text]
         return descriptions
 
     @classmethod
@@ -88,8 +91,6 @@ class Interpretation(Dictionary):
         soup = cls.response(word, settings.URL_INTERPRETATION)
         if soup:
             return cls.make_dict(soup)
-        else:
-            return
 
 
 class Translation(Dictionary):
@@ -104,8 +105,7 @@ class Translation(Dictionary):
             label = soup.find('span', class_='posgram ico-bg').text
         except AttributeError:
             return 'Not label'
-        else:
-            return label
+        return label
 
     @classmethod
     def get_description(cls, soup):
@@ -114,14 +114,15 @@ class Translation(Dictionary):
         for part in descriptions:
             word_description = part.find('p', class_='def-head semi-flush').text
             if word_description != '' and word_description[:2] in levels:
-                word_description = '*{}* {}'.format(word_description[:2], word_description[2:])
+                word_description = '*{0}* {1}'.format(word_description[:2], word_description[2:])
             transcription = part.find('span', class_='trans').text.strip()
             examples = part.find_all('div', class_='examp emphasized')
             example = '\n'.join(chunk.text for chunk in examples)
             descriptions_text.append([word_description, transcription, example])
-        descriptions = list(map(lambda x: '\[Description] {}\n'
-                                          '\[Translate] {}\n'
-                                          '\[Example] {}\n'.format(x[0], x[1], x[2]), descriptions_text))
+        descriptions = ['\[Description] {0}\n'
+                        '\[Translate] {1}\n'
+                        '\[Example] {2}\n'.format(description[0], description[1], description[2])
+                        for description in descriptions_text]
         return descriptions
 
     @classmethod
@@ -129,5 +130,4 @@ class Translation(Dictionary):
         soup = cls.response(word, settings.URL_TRANSLATION)
         if soup:
             return cls.make_dict(soup)
-        else:
-            return
+
