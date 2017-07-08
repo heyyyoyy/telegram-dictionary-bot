@@ -38,7 +38,7 @@ def interpretation_word(message):
             txt = text_format(dictionary)
             for part in txt:
                 bot.send_message(message.chat.id, part, parse_mode='Markdown')
-            if dictionary.get('audio') is not None:
+            if dictionary.get('audio'):
                 bot.send_audio(message.chat.id, dictionary.get('audio'))
         else:
             bot.send_message(message.chat.id, 'Нет такого слова.')
