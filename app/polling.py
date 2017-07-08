@@ -9,7 +9,7 @@ bot = telebot.TeleBot(settings.TOKEN)
 def text_format(dictionary):
     part = '*[Word] {title}\n[Part of speech] {label}\n[Transcription] {transcription}*\n'.format(**dictionary)
     descriptions = []
-    for description in dictionary.get('description'):
+    for description in dictionary.get('description', []):
         if len(description) + len(part) < 4096:
             part += description
             if description is dictionary.get('description')[-1]:
