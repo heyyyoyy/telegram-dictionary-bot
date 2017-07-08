@@ -1,6 +1,6 @@
 import os
 
 TOKEN = os.environ['TOKEN']
-URL_TRANSLATE = os.environ['URL_TRANSLATE']
+URL_TRANSLATION = os.environ['URL_TRANSLATION']
 URL_INTERPRETATION = os.environ['URL_INTERPRETATION']
 

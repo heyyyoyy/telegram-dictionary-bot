@@ -8,11 +8,12 @@ levels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
 class Dictionary:
     @classmethod
     def response(cls, word, url):
-        resp = requests.get(url + word.split()[-1])
-        if resp.url == url:
-            raise ValueError
-        soup = BeautifulSoup(resp.text, features='lxml')
-        return soup
+        response = requests.get(url + word, allow_redirects=False)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, features='lxml')
+            return soup
+        else:
+            return
 
     @classmethod
     def get_transcription(cls, soup):
@@ -41,14 +42,14 @@ class Dictionary:
         title = cls.get_title(soup)
         labels = cls.get_labels(soup)
         audio = cls.get_audio(soup)
-        transcr = cls.get_transcription(soup)
-        descr = cls.get_description(soup)
+        transcription = cls.get_transcription(soup)
+        description = cls.get_description(soup)
         return {
             'title': title,
             'label': labels,
             'audio': audio,
-            'transcr': transcr,
-            'descr': descr
+            'transcription': transcription,
+            'description': description
         }
 
 
@@ -69,30 +70,29 @@ class Interpretation(Dictionary):
 
     @classmethod
     def get_description(cls, soup):
-        descr = soup.find_all('div', class_='def-block pad-indent')
-        description_list = []
-        for d in descr:
-            des = d.find('p', class_='def-head semi-flush').text
-            if des != '' and des[:2] in levels:
-                des = '*{}* {}'.format(des[:2], des[2:])
-            example = d.find_all('span', class_='def-body')
-            example = '\n'.join(map(lambda x: x.text, example))
-            description_list.append([des, example])
+        descriptions = soup.find_all('div', class_='def-block pad-indent')
+        descriptions_text = []
+        for part in descriptions:
+            word_description = part.find('p', class_='def-head semi-flush').text
+            if word_description != '' and word_description[:2] in levels:
+                word_description = '*{}* {}'.format(word_description[:2], word_description[2:])
+            examples = part.find_all('span', class_='def-body')
+            example = '\n'.join(chunk.text for chunk in examples)
+            descriptions_text.append([word_description, example])
         descriptions = list(map(lambda x: '\[Description] {}\n'
-                                          '\[Example] {}\n'.format(x[0], x[1]), description_list))
+                                          '\[Example] {}\n'.format(x[0], x[1]), descriptions_text))
         return descriptions
 
     @classmethod
     def get_dict(cls, word):
-        try:
-            soup = cls.response(word, settings.URL_INTERPRETATION)
-        except ValueError:
-            return False
-        else:
+        soup = cls.response(word, settings.URL_INTERPRETATION)
+        if soup:
             return cls.make_dict(soup)
+        else:
+            return
 
 
-class Translate(Dictionary):
+class Translation(Dictionary):
     @classmethod
     def get_title(cls, soup):
         title = soup.find('h2', class_='di-title cdo-section-title-hw').text
@@ -109,26 +109,25 @@ class Translate(Dictionary):
 
     @classmethod
     def get_description(cls, soup):
-        descr = soup.find_all('div', class_='def-block pad-indent')
-        description_list = []
-        for d in descr:
-            des = d.find('p', class_='def-head semi-flush').text
-            if des != '' and des[:2] in levels:
-                des = '*{}* {}'.format(des[:2], des[2:])
-            trans = d.find('span', class_='trans').text.strip()
-            ex = d.find_all('div', class_='examp emphasized')
-            ex = '\n'.join(map(lambda x: x.text, ex))
-            description_list.append([des, trans, ex])
+        descriptions = soup.find_all('div', class_='def-block pad-indent')
+        descriptions_text = []
+        for part in descriptions:
+            word_description = part.find('p', class_='def-head semi-flush').text
+            if word_description != '' and word_description[:2] in levels:
+                word_description = '*{}* {}'.format(word_description[:2], word_description[2:])
+            transcription = part.find('span', class_='trans').text.strip()
+            examples = part.find_all('div', class_='examp emphasized')
+            example = '\n'.join(chunk.text for chunk in examples)
+            descriptions_text.append([word_description, transcription, example])
         descriptions = list(map(lambda x: '\[Description] {}\n'
                                           '\[Translate] {}\n'
-                                          '\[Example] {}\n'.format(x[0], x[1], x[2]), description_list))
+                                          '\[Example] {}\n'.format(x[0], x[1], x[2]), descriptions_text))
         return descriptions
 
     @classmethod
     def get_dict(cls, word):
-        try:
-            soup = cls.response(word, settings.URL_TRANSLATE)
-        except ValueError:
-            return False
-        else:
+        soup = cls.response(word, settings.URL_TRANSLATION)
+        if soup:
             return cls.make_dict(soup)
+        else:
+            return
